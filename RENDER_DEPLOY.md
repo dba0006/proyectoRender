@@ -1,35 +1,35 @@
 # Proyecto Laravel - Deployment en Render
 
-## Configuración en Render
+## Configuración en Render (Usando Docker)
 
 ### 1. Crear nuevo Web Service
 - Ve a [Render Dashboard](https://dashboard.render.com/)
 - Click en "New" > "Web Service"
-- Conecta tu repositorio de GitHub
+- Conecta tu repositorio de GitHub: `dba0006/proyectoRender`
 
 ### 2. Configuración del Servicio
 
-#### Build & Deploy
-- **Environment**: `PHP`
-- **Build Command**: 
-  ```bash
-  bash build.sh
-  ```
-- **Start Command**: 
-  ```bash
-  php artisan serve --host=0.0.0.0 --port=$PORT --env=production
-  ```
+#### Build & Deploy Settings
+- **Name**: `proyectorender` (o el que prefieras)
+- **Environment**: `Docker`
+- **Region**: Oregon (o el más cercano)
+- **Branch**: `main`
+- **Root Directory**: (dejar vacío)
+- **Dockerfile Path**: `Dockerfile`
+
+⚠️ **IMPORTANTE**: Render debe detectar automáticamente el Dockerfile. Si no lo detecta, asegúrate de que esté en la raíz del proyecto.
 
 ### 3. Variables de Entorno Requeridas
 
 Configura estas variables en Render Dashboard > Environment:
 
+**Variables Obligatorias:**
 ```
 APP_NAME=ProyectoRender
 APP_ENV=production
-APP_KEY=base64:TU_CLAVE_GENERADA_AQUI
+APP_KEY=base64:ffn4XFh9uJaCwaMR+eiN3MAvh0hmYH7yniLB6U3DPZo=
 APP_DEBUG=false
-APP_URL=https://tu-app.onrender.com
+APP_URL=https://proyectorender.onrender.com
 
 LOG_CHANNEL=stderr
 LOG_LEVEL=error
@@ -43,16 +43,39 @@ QUEUE_CONNECTION=sync
 FILESYSTEM_DISK=local
 ```
 
-### 4. Generar APP_KEY
+**IMPORTANTE**: 
+- Cambia `APP_URL` por tu URL real de Render después del primer deploy
+- El `APP_KEY` debe ser único. Genera uno nuevo con: `php artisan key:generate --show`
 
-Para generar el APP_KEY, ejecuta localmente:
-```bash
-php artisan key:generate --show
-```
+### 4. Configuración del Puerto
 
-Copia el resultado y pégalo en la variable `APP_KEY` en Render.
+El Dockerfile está configurado para usar el puerto **8080**, pero Render necesita que uses el puerto que él asigna vía la variable `$PORT`.
 
-### 5. Base de Datos
+El Dockerfile ya está configurado correctamente para esto.
+
+### 5. Deploy
+
+Una vez configurado todo:
+1. Haz push a tu repositorio (ya hecho ✅)
+2. En Render, click en **"Create Web Service"**
+3. Render detectará el Dockerfile y comenzará el build automáticamente
+4. El proceso puede tardar 5-10 minutos la primera vez
+5. Las migraciones se ejecutarán automáticamente al iniciar
+
+### 6. Verificar el Deploy
+
+Una vez completado el deploy:
+- Render te dará una URL como: `https://proyectorender.onrender.com`
+- Actualiza la variable `APP_URL` con esta URL
+- Haz un nuevo deploy si es necesario
+
+## Archivos de Configuración Docker
+
+- `Dockerfile`: Configuración del contenedor con PHP 8.2 y todas las dependencias
+- `.dockerignore`: Archivos que no se copian al contenedor
+- `render.yaml`: Configuración de infraestructura como código (opcional)
+
+## Base de Datos
 
 El proyecto está configurado para usar SQLite por defecto. Si necesitas PostgreSQL o MySQL:
 
