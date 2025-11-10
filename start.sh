@@ -1,42 +1,36 @@
 #!/usr/bin/env bash
 
-echo "Running deployment script..."
+echo "Running deployment script for Render..."
 
-# Install dependencies
+# Install Composer dependencies
 echo "Installing composer dependencies..."
-composer install --no-dev --optimize-autoloader --no-interaction
+composer install --no-dev --working-dir=/opt/render/project/src --optimize-autoloader --no-interaction
 
-# Create .env if it doesn't exist
-if [ ! -f .env ]; then
-    echo "Creating .env file..."
-    cp .env.example .env
-fi
+# Clear any cached config to avoid errors
+echo "Clearing config cache..."
+php artisan config:clear
+php artisan cache:clear
 
-# Generate application key if needed
-echo "Generating application key..."
-php artisan key:generate --force
+# Run migrations
+echo "Running database migrations..."
+php artisan migrate --force --no-interaction
 
-# Clear and cache configuration
+# Build frontend assets
+echo "Building frontend assets..."
+npm ci
+npm run build
+
+# Optimize for production
 echo "Optimizing application..."
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Run migrations
-echo "Running database migrations..."
-php artisan migrate --force
-
-# Install npm dependencies and build assets
-echo "Building frontend assets..."
-npm install
-npm run build
-
 # Set proper permissions
 echo "Setting permissions..."
 chmod -R 755 storage bootstrap/cache
 
-echo "Deployment complete!"
+echo "Deployment complete! Starting server..."
 
-# Start the application
-echo "Starting application..."
-php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
+# Start PHP built-in server
+php artisan serve --host=0.0.0.0 --port=${PORT:-8000} --env=production
