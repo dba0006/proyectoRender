@@ -1,5 +1,5 @@
-# Use PHP 8.2 with Apache
-FROM php:8.2-apache
+# Use PHP 8.2 CLI (lighter and better for artisan serve)
+FROM php:8.2-cli
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,16 +10,17 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    nodejs \
-    npm \
     sqlite3 \
-    libsqlite3-dev
-
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    libsqlite3-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd
+
+# Install Node.js 20.x
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -27,41 +28,37 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www/html
 
-# Copy existing application directory contents
-COPY . /var/www/html
+# Copy composer files first for better caching
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
 
-# Copy existing application directory permissions
-RUN chown -R www-data:www-data /var/www/html
+# Copy package files
+COPY package*.json ./
+RUN npm ci --only=production
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Copy the rest of the application
+COPY . .
 
-# Install npm dependencies and build
-RUN npm ci && npm run build
+# Finish composer installation
+RUN composer dump-autoload --optimize --no-interaction
 
-# Clear caches
-RUN php artisan config:clear || true
-RUN php artisan cache:clear || true
+# Build frontend assets
+RUN npm run build
 
-# Create SQLite database directory and file
-RUN mkdir -p /var/www/html/database
-RUN touch /var/www/html/database/database.sqlite
-RUN chown -R www-data:www-data /var/www/html/database
-RUN chmod -R 775 /var/www/html/database
-
-# Set permissions for storage and cache
-RUN mkdir -p /var/www/html/storage/framework/{sessions,views,cache}
-RUN mkdir -p /var/www/html/storage/logs
-RUN chmod -R 775 /var/www/html/storage
-RUN chmod -R 775 /var/www/html/bootstrap/cache
-RUN chown -R www-data:www-data /var/www/html/storage
-RUN chown -R www-data:www-data /var/www/html/bootstrap/cache
+# Create necessary directories and set permissions
+RUN mkdir -p storage/framework/{sessions,views,cache} \
+    && mkdir -p storage/logs \
+    && mkdir -p database \
+    && touch database/database.sqlite \
+    && chmod -R 777 storage \
+    && chmod -R 777 bootstrap/cache \
+    && chmod -R 777 database
 
 # Copy startup script
 COPY start-render.sh /start-render.sh
 RUN chmod +x /start-render.sh
 
-# Expose port (Render will override with $PORT)
+# Expose port
 EXPOSE 10000
 
 # Start application
