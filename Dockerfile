@@ -43,16 +43,26 @@ RUN npm ci && npm run build
 RUN php artisan config:clear || true
 RUN php artisan cache:clear || true
 
-# Create SQLite database
+# Create SQLite database directory and file
+RUN mkdir -p /var/www/html/database
 RUN touch /var/www/html/database/database.sqlite
-RUN chown www-data:www-data /var/www/html/database/database.sqlite
+RUN chown -R www-data:www-data /var/www/html/database
+RUN chmod -R 775 /var/www/html/database
 
-# Set permissions
-RUN chmod -R 755 /var/www/html/storage
-RUN chmod -R 755 /var/www/html/bootstrap/cache
+# Set permissions for storage and cache
+RUN mkdir -p /var/www/html/storage/framework/{sessions,views,cache}
+RUN mkdir -p /var/www/html/storage/logs
+RUN chmod -R 775 /var/www/html/storage
+RUN chmod -R 775 /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage
+RUN chown -R www-data:www-data /var/www/html/bootstrap/cache
+
+# Copy startup script
+COPY start-render.sh /start-render.sh
+RUN chmod +x /start-render.sh
 
 # Expose port (Render will override with $PORT)
 EXPOSE 10000
 
 # Start application
-CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}
+CMD ["/start-render.sh"]

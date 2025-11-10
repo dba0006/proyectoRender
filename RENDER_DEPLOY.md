@@ -107,6 +107,42 @@ Una vez configurado todo:
 
 ### Troubleshooting
 
+#### Error 500 - Internal Server Error
+
+Si ves un error 500, verifica lo siguiente:
+
+1. **Revisa los logs en Render**:
+   - Ve a tu servicio en Render
+   - Click en "Logs" en el menú lateral
+   - Busca mensajes de error específicos
+
+2. **Verifica las variables de entorno**:
+   - Asegúrate de que `APP_KEY` esté configurado correctamente
+   - Debe empezar con `base64:`
+   - Ejemplo: `base64:ffn4XFh9uJaCwaMR+eiN3MAvh0hmYH7yniLB6U3DPZo=`
+
+3. **Verifica que todas las variables estén configuradas**:
+   ```
+   APP_NAME=ProyectoRender
+   APP_ENV=production
+   APP_KEY=base64:TU_CLAVE_AQUI
+   APP_DEBUG=false (no true!)
+   APP_URL=https://tu-url.onrender.com
+   LOG_CHANNEL=stderr
+   DB_CONNECTION=sqlite
+   SESSION_DRIVER=file
+   CACHE_DRIVER=file
+   QUEUE_CONNECTION=sync
+   ```
+
+4. **Habilita temporalmente el debug**:
+   - Cambia `APP_DEBUG=true` para ver el error exacto
+   - **NO OLVIDES** volver a ponerlo en `false` después
+
+5. **Forzar un nuevo deploy**:
+   - Ve a "Manual Deploy"
+   - Click en "Clear build cache & deploy"
+
 #### Error de permisos
 Si hay errores de permisos, asegúrate de que `build.sh` tiene permisos de ejecución:
 ```bash
