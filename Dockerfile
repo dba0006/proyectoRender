@@ -1,7 +1,7 @@
 # Use PHP 8.2 CLI (lighter and better for artisan serve)
 FROM php:8.2-cli
 
-# Install system dependencies
+# Install system dependencies and Node.js in one layer
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -12,15 +12,15 @@ RUN apt-get update && apt-get install -y \
     unzip \
     sqlite3 \
     libsqlite3-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Verify Node.js and npm installation
+RUN node -v && npm -v
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd
-
-# Install Node.js 20.x
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -30,11 +30,15 @@ WORKDIR /var/www/html
 
 # Copy composer files first for better caching
 COPY composer.json composer.lock ./
+
+# Install PHP dependencies
 RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction
 
 # Copy package files
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Install npm dependencies
+RUN npm install
 
 # Copy the rest of the application
 COPY . .
