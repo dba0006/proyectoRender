@@ -1,0 +1,9 @@
+{{-- Vista Create de Clientes --}}
+@extends('layouts.app')
+
+@section('content')
+<div class="container">
+    <h1>Crear Cliente</h1>
+    {{-- Formulario de creación aquí --}}
+</div>
+@endsection
