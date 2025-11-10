@@ -42,21 +42,22 @@ chmod -R 777 database
 echo "Permissions set ✓"
 echo ""
 
-echo "=== Clearing all caches ==="
-php artisan config:clear
-php artisan cache:clear
-php artisan view:clear
-php artisan route:clear
-echo "Caches cleared ✓"
-echo ""
-
-echo "=== Running migrations ==="
+echo "=== Running migrations FIRST ==="
 php artisan migrate --force --verbose
 if [ $? -eq 0 ]; then
     echo "Migrations completed ✓"
 else
-    echo "WARNING: Migrations failed but continuing..."
+    echo "WARNING: Migrations failed!"
+    php artisan migrate:status
 fi
+echo ""
+
+echo "=== Now clearing caches (after migrations) ==="
+php artisan config:clear || echo "Config clear failed (ok)"
+php artisan cache:clear || echo "Cache clear failed (ok)"
+php artisan view:clear || echo "View clear failed (ok)"
+php artisan route:clear || echo "Route clear failed (ok)"
+echo "Caches cleared ✓"
 echo ""
 
 echo "=== Application Information ==="
